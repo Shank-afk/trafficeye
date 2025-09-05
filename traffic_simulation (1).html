@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Traffic Management System</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 20px;
+        }
+        
+        .main-panel {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .control-panel {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            height: fit-content;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 2em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        #canvas {
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            background: #2d5016;
+            display: block;
+            margin: 0 auto;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+        
+        .controls {
+            margin-bottom: 20px;
+        }
+        
+        .control-group {
+            margin-bottom: 15px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .control-group h3 {
+            margin: 0 0 10px 0;
+            color: #ffeb3b;
+        }
+        
+        button {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 2px;
+            transition: all 0.3s ease;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        
+        button.active {
+            background: linear-gradient(45deg, #4ecdc4, #44a08d);
+        }
+        
+        .direction-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 5px;
+            margin-top: 10px;
+        }
+        
+        .direction-buttons button:nth-child(2) { grid-column: 2; }
+        .direction-buttons button:nth-child(1) { grid-column: 2; grid-row: 1; }
+        .direction-buttons button:nth-child(3) { grid-column: 1; grid-row: 2; }
+        .direction-buttons button:nth-child(4) { grid-column: 3; grid-row: 2; }
+        .direction-buttons button:nth-child(5) { grid-column: 2; grid-row: 3; }
+        
+        .metrics {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        
+        .metric {
+            background: rgba(0,0,0,0.2);
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        
+        .metric-value {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #4ecdc4;
+        }
+        
+        .metric-label {
+            font-size: 0.8em;
+            opacity: 0.8;
+            margin-top: 4px;
+        }
+        
+        .algorithm-selector {
+            display: flex;
+            gap: 5px;
+            margin-top: 10px;
+        }
+        
+        .algorithm-selector button {
+            flex: 1;
+            font-size: 0.8em;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            margin: 10px 0;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-running { background: #4ecdc4; }
+        .status-paused { background: #feca57; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="main-panel">
+            <h1>🚦 Smart Traffic Management System</h1>
+            <canvas id="canvas" width="800" height="600"></canvas>
+        </div>
+        
+        <div class="control-panel">
+            <div class="control-group">
+                <h3>🎮 Simulation Control</h3>
+                <button id="playPause">⏸️ Pause</button>
+                <button id="reset">🔄 Reset</button>
+                <div>
+                    <label>Speed: <span id="speedValue">1x</span></label>
+                    <input type="range" id="speed" min="0.5" max="3" step="0.5" value="1">
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <h3>🚗 Add Vehicles</h3>
+                <div class="direction-buttons">
+                    <button onclick="addVehicle('north')">⬆️ North</button>
+                    <button onclick="addVehicle('west')">⬅️ West</button>
+                    <button onclick="addVehicle('east')">➡️ East</button>
+                    <button onclick="addVehicle('south')">⬇️ South</button>
+                    <button onclick="addVehicles(5)" style="background: linear-gradient(45deg, #9b59b6, #8e44ad);">+5 Random</button>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <h3>🤖 Algorithm</h3>
+                <div class="algorithm-selector">
+                    <button id="algoFixed" class="active" onclick="setAlgorithm('fixed')">Fixed</button>
+                    <button id="algoAdaptive" onclick="setAlgorithm('adaptive')">Smart AI</button>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <h3>📊 Performance Metrics</h3>
+                <div class="metrics">
+                    <div class="metric">
+                        <div class="metric-value" id="avgWaitTime">0.0s</div>
+                        <div class="metric-label">Avg Wait Time</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value" id="throughput">0</div>
+                        <div class="metric-label">Throughput/min</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value" id="totalQueue">0</div>
+                        <div class="metric-label">Total Queue</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value" id="efficiency">0%</div>
+                        <div class="metric-label">Efficiency</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <h3>🚦 Current Signal</h3>
+                <div id="signalStatus">
+                    <div><span class="status-indicator status-running"></span><span id="currentPhase">North-South: Green</span></div>
+                    <div style="margin-top: 5px;">Time remaining: <span id="timeRemaining">30s</span></div>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <h3>📈 Queue Status</h3>
+                <div id="queueStatus">
+                    <div>North: <span id="queueNorth">0</span> vehicles</div>
+                    <div>South: <span id="queueSouth">0</span> vehicles</div>
+                    <div>East: <span id="queueEast">0</span> vehicles</div>
+                    <div>West: <span id="queueWest">0</span> vehicles</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Canvas setup
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Simulation state
+        let isRunning = true;
+        let simulationSpeed = 1;
+        let currentAlgorithm = 'fixed';
+        let frameCount = 0;
+        
+        // Traffic signal state
+        let currentPhase = 'NS'; // NS (North-South) or EW (East-West)
+        let phaseTimer = 0;
+        let phaseDuration = 30; // seconds
+        
+        // Vehicles array
+        let vehicles = [];
+        let vehicleId = 0;
+        
+        // Performance tracking
+        let totalWaitTime = 0;
+        let completedVehicles = 0;
+        let startTime = Date.now();
+        
+        // Intersection geometry
+        const intersection = {
+            centerX: 400,
+            centerY: 300,
+            roadWidth: 80,
+            laneWidth: 20
+        };
+        
+        // Vehicle class
+        class Vehicle {
+            constructor(direction, lane = 0) {
+                this.id = vehicleId++;
+                this.direction = direction;
+                this.lane = lane;
+                this.speed = 0;
+                this.maxSpeed = 2;
+                this.waitTime = 0;
+                this.hasPassedIntersection = false;
+                
+                // Set initial position based on direction
+                this.setInitialPosition();
+            }
+            
+            setInitialPosition() {
+                const offset = this.lane * 25;
+                switch(this.direction) {
+                    case 'north':
+                        this.x = intersection.centerX - 10 + offset;
+                        this.y = canvas.height + 20;
+                        break;
+                    case 'south':
+                        this.x = intersection.centerX + 10 - offset;
+                        this.y = -20;
+                        break;
+                    case 'east':
+                        this.x = -20;
+                        this.y = intersection.centerY + 10 - offset;
+                        break;
+                    case 'west':
+                        this.x = canvas.width + 20;
+                        this.y = intersection.centerY - 10 + offset;
+                        break;
+                }
+            }
+            
+            update() {
+                if (!this.canMove()) {
+                    this.speed = Math.max(0, this.speed - 0.1);
+                    this.waitTime += 1/60; // Assuming 60 FPS
+                } else {
+                    this.speed = Math.min(this.maxSpeed, this.speed + 0.1);
+                    this.waitTime = 0;
+                }
+                
+                // Move vehicle
+                switch(this.direction) {
+                    case 'north':
+                        this.y -= this.speed;
+                        break;
+                    case 'south':
+                        this.y += this.speed;
+                        break;
+                    case 'east':
+                        this.x += this.speed;
+                        break;
+                    case 'west':
+                        this.x -= this.speed;
+                        break;
+                }
+                
+                // Check if passed intersection
+                if (!this.hasPassedIntersection && this.hasPassedThroughIntersection()) {
+                    this.hasPassedIntersection = true;
+                    completedVehicles++;
+                    totalWaitTime += this.waitTime;
+                }
+            }
+            
+            canMove() {
+                // Check if at intersection and signal allows movement
+                const atIntersection = this.isAtIntersection();
+                if (atIntersection) {
+                    if ((this.direction === 'north' || this.direction === 'south') && currentPhase !== 'NS') {
+                        return false;
+                    }
+                    if ((this.direction === 'east' || this.direction === 'west') && currentPhase !== 'EW') {
+                        return false;
+                    }
+                }
+                
+                // Check for vehicle ahead
+                return !this.hasVehicleAhead();
+            }
+            
+            isAtIntersection() {
+                const buffer = 50;
+                return (
+                    this.x > intersection.centerX - intersection.roadWidth - buffer &&
+                    this.x < intersection.centerX + intersection.roadWidth + buffer &&
+                    this.y > intersection.centerY - intersection.roadWidth - buffer &&
+                    this.y < intersection.centerY + intersection.roadWidth + buffer
+                );
+            }
+            
+            hasPassedThroughIntersection() {
+                switch(this.direction) {
+                    case 'north':
+                        return this.y < intersection.centerY - intersection.roadWidth;
+                    case 'south':
+                        return this.y > intersection.centerY + intersection.roadWidth;
+                    case 'east':
+                        return this.x > intersection.centerX + intersection.roadWidth;
+                    case 'west':
+                        return this.x < intersection.centerX - intersection.roadWidth;
+                }
+                return false;
+            }
+            
+            hasVehicleAhead() {
+                const safeDistance = 30;
+                for (let other of vehicles) {
+                    if (other.id === this.id || other.direction !== this.direction) continue;
+                    
+                    switch(this.direction) {
+                        case 'north':
+                            if (other.y < this.y && other.y > this.y - safeDistance && 
+                                Math.abs(other.x - this.x) < 15) return true;
+                            break;
+                        case 'south':
+                            if (other.y > this.y && other.y < this.y + safeDistance && 
+                                Math.abs(other.x - this.x) < 15) return true;
+                            break;
+                        case 'east':
+                            if (other.x > this.x && other.x < this.x + safeDistance && 
+                                Math.abs(other.y - this.y) < 15) return true;
+                            break;
+                        case 'west':
+                            if (other.x < this.x && other.x > this.x - safeDistance && 
+                                Math.abs(other.y - this.y) < 15) return true;
+                            break;
+                    }
+                }
+                return false;
+            }
+            
+            draw() {
+                ctx.save();
+                
+                // Vehicle color based on state
+                if (this.speed === 0) {
+                    ctx.fillStyle = '#ff6b6b'; // Red when stopped
+                } else if (this.speed < this.maxSpeed / 2) {
+                    ctx.fillStyle = '#feca57'; // Yellow when slow
+                } else {
+                    ctx.fillStyle = '#48CAE4'; // Blue when moving
+                }
+                
+                // Draw vehicle as rectangle
+                ctx.fillRect(this.x - 6, this.y - 6, 12, 12);
+                
+                // Direction indicator
+                ctx.fillStyle = 'white';
+                ctx.font = '8px Arial';
+                ctx.textAlign = 'center';
+                const arrows = {north: '↑', south: '↓', east: '→', west: '←'};
+                ctx.fillText(arrows[this.direction], this.x, this.y + 2);
+                
+                ctx.restore();
+            }
+        }
+        
+        // Traffic signal management
+        function updateTrafficSignal() {
+            phaseTimer += 1/60 * simulationSpeed; // Assuming 60 FPS
+            
+            if (currentAlgorithm === 'adaptive') {
+                // Smart AI algorithm
+                const queueLengths = getQueueLengths();
+                const nsQueue = queueLengths.north + queueLengths.south;
+                const ewQueue = queueLengths.east + queueLengths.west;
+                
+                // Minimum phase time
+                const minPhaseTime = 15;
+                const maxPhaseTime = 60;
+                
+                if (phaseTimer >= minPhaseTime) {
+                    // Switch if other direction has significantly more traffic
+                    if (currentPhase === 'NS' && ewQueue > nsQueue + 2 && phaseTimer >= 20) {
+                        switchPhase();
+                    } else if (currentPhase === 'EW' && nsQueue > ewQueue + 2 && phaseTimer >= 20) {
+                        switchPhase();
+                    } else if (phaseTimer >= maxPhaseTime) {
+                        // Force switch after max time
+                        switchPhase();
+                    }
+                }
+            } else {
+                // Fixed timing algorithm
+                if (phaseTimer >= phaseDuration) {
+                    switchPhase();
+                }
+            }
+        }
+        
+        function switchPhase() {
+            currentPhase = currentPhase === 'NS' ? 'EW' : 'NS';
+            phaseTimer = 0;
+        }
+        
+        function getQueueLengths() {
+            const queues = {north: 0, south: 0, east: 0, west: 0};
+            
+            for (let vehicle of vehicles) {
+                if (vehicle.speed === 0 && vehicle.isAtIntersection()) {
+                    queues[vehicle.direction]++;
+                }
+            }
+            
+            return queues;
+        }
+        
+        // Drawing functions
+        function drawIntersection() {
+            // Clear canvas
+            ctx.fillStyle = '#2d5016';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw roads
+            ctx.fillStyle = '#444';
+            
+            // Horizontal road
+            ctx.fillRect(0, intersection.centerY - intersection.roadWidth/2, 
+                        canvas.width, intersection.roadWidth);
+            
+            // Vertical road
+            ctx.fillRect(intersection.centerX - intersection.roadWidth/2, 0, 
+                        intersection.roadWidth, canvas.height);
+            
+            // Draw lane markings
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([10, 10]);
+            
+            // Horizontal lane markings
+            ctx.beginPath();
+            ctx.moveTo(0, intersection.centerY);
+            ctx.lineTo(canvas.width, intersection.centerY);
+            ctx.stroke();
+            
+            // Vertical lane markings
+            ctx.beginPath();
+            ctx.moveTo(intersection.centerX, 0);
+            ctx.lineTo(intersection.centerX, canvas.height);
+            ctx.stroke();
+            
+            ctx.setLineDash([]);
+            
+            // Draw traffic lights
+            drawTrafficLights();
+        }
+        
+        function drawTrafficLights() {
+            const lightSize = 15;
+            const lightOffset = 60;
+            
+            // North light
+            drawLight(intersection.centerX + lightOffset, intersection.centerY - lightOffset, 
+                     currentPhase === 'NS' ? 'green' : 'red');
+            
+            // South light
+            drawLight(intersection.centerX - lightOffset, intersection.centerY + lightOffset, 
+                     currentPhase === 'NS' ? 'green' : 'red');
+            
+            // East light
+            drawLight(intersection.centerX + lightOffset, intersection.centerY + lightOffset, 
+                     currentPhase === 'EW' ? 'green' : 'red');
+            
+            // West light
+            drawLight(intersection.centerX - lightOffset, intersection.centerY - lightOffset, 
+                     currentPhase === 'EW' ? 'green' : 'red');
+        }
+        
+        function drawLight(x, y, color) {
+            ctx.fillStyle = '#333';
+            ctx.fillRect(x - 8, y - 12, 16, 24);
+            
+            ctx.fillStyle = color === 'green' ? '#4ecdc4' : '#ff6b6b';
+            ctx.beginPath();
+            ctx.arc(x, y, 6, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        
+        // Vehicle management
+        function addVehicle(direction) {
+            vehicles.push(new Vehicle(direction));
+        }
+        
+        function addVehicles(count) {
+            const directions = ['north', 'south', 'east', 'west'];
+            for (let i = 0; i < count; i++) {
+                const randomDirection = directions[Math.floor(Math.random() * directions.length)];
+                addVehicle(randomDirection);
+            }
+        }
+        
+        // Main simulation loop
+        function simulate() {
+            if (!isRunning) return;
+            
+            frameCount++;
+            
+            // Update traffic signal
+            updateTrafficSignal();
+            
+            // Update vehicles
+            for (let i = vehicles.length - 1; i >= 0; i--) {
+                vehicles[i].update();
+                
+                // Remove vehicles that have left the screen
+                const v = vehicles[i];
+                if (v.x < -50 || v.x > canvas.width + 50 || 
+                    v.y < -50 || v.y > canvas.height + 50) {
+                    vehicles.splice(i, 1);
+                }
+            }
+            
+            // Draw everything
+            drawIntersection();
+            
+            for (let vehicle of vehicles) {
+                vehicle.draw();
+            }
+            
+            // Update UI every 30 frames (roughly every 0.5 seconds)
+            if (frameCount % 30 === 0) {
+                updateUI();
+            }
+            
+            // Add random traffic
+            if (frameCount % 120 === 0) { // Every 2 seconds
+                if (Math.random() < 0.3) {
+                    const directions = ['north', 'south', 'east', 'west'];
+                    const randomDirection = directions[Math.floor(Math.random() * directions.length)];
+                    addVehicle(randomDirection);
+                }
+            }
+        }
+        
+        // UI Updates
+        function updateUI() {
+            const queues = getQueueLengths();
+            const totalQueue = queues.north + queues.south + queues.east + queues.west;
+            
+            // Update metrics
+            const avgWait = completedVehicles > 0 ? totalWaitTime / completedVehicles : 0;
+            const timeElapsed = (Date.now() - startTime) / 1000 / 60; // minutes
+            const throughput = timeElapsed > 0 ? (completedVehicles / timeElapsed).toFixed(1) : 0;
+            const efficiency = totalQueue > 0 ? Math.max(0, 100 - (avgWait * 10)).toFixed(0) : 100;
+            
+            document.getElementById('avgWaitTime').textContent = avgWait.toFixed(1) + 's';
+            document.getElementById('throughput').textContent = throughput;
+            document.getElementById('totalQueue').textContent = totalQueue;
+            document.getElementById('efficiency').textContent = efficiency + '%';
+            
+            // Update signal status
+            const phaseText = currentPhase === 'NS' ? 'North-South: Green' : 'East-West: Green';
+            document.getElementById('currentPhase').textContent = phaseText;
+            
+            const remaining = Math.max(0, phaseDuration - phaseTimer).toFixed(0);
+            document.getElementById('timeRemaining').textContent = remaining + 's';
+            
+            // Update queue status
+            document.getElementById('queueNorth').textContent = queues.north;
+            document.getElementById('queueSouth').textContent = queues.south;
+            document.getElementById('queueEast').textContent = queues.east;
+            document.getElementById('queueWest').textContent = queues.west;
+        }
+        
+        // Control functions
+        function setAlgorithm(algorithm) {
+            currentAlgorithm = algorithm;
+            
+            // Update button states
+            document.getElementById('algoFixed').classList.toggle('active', algorithm === 'fixed');
+            document.getElementById('algoAdaptive').classList.toggle('active', algorithm === 'adaptive');
+            
+            // Reset phase timer when switching algorithms
+            phaseTimer = 0;
+        }
+        
+        function resetSimulation() {
+            vehicles = [];
+            vehicleId = 0;
+            totalWaitTime = 0;
+            completedVehicles = 0;
+            startTime = Date.now();
+            frameCount = 0;
+            phaseTimer = 0;
+            currentPhase = 'NS';
+        }
+        
+        // Event listeners
+        document.getElementById('playPause').addEventListener('click', function() {
+            isRunning = !isRunning;
+            this.textContent = isRunning ? '⏸️ Pause' : '▶️ Play';
+            if (isRunning) {
+                gameLoop();
+            }
+        });
+        
+        document.getElementById('reset').addEventListener('click', resetSimulation);
+        
+        document.getElementById('speed').addEventListener('input', function() {
+            simulationSpeed = parseFloat(this.value);
+            document.getElementById('speedValue').textContent = simulationSpeed + 'x';
+        });
+        
+        // Game loop
+        function gameLoop() {
+            simulate();
+            if (isRunning) {
+                requestAnimationFrame(gameLoop);
+            }
+        }
+        
+        // Start simulation
+        gameLoop();
+        
+        // Initial UI update
+        updateUI();
+    </script>
+</body>
+</html>
