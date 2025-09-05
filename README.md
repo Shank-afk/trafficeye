@@ -277,10 +277,6 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 - JavaScript: Use ESLint and Prettier
 - Commit messages: Follow conventional commit format
 
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
 ## 🏆 Hackathon Submission
 
 **Problem Statement ID**: 25050  
@@ -295,22 +291,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - ✅ **Scalable architecture** for citywide deployment
 - ✅ **Integration ready** with existing infrastructure
 - ✅ **Comprehensive documentation** and testing
-
-## 👥 Team
-
-- **Lead Developer**: [Your Name] - AI/ML Engineer
-- **Frontend Developer**: [Team Member] - Full-stack Developer
-- **Data Scientist**: [Team Member] - Traffic Analytics Specialist
-- **System Architect**: [Team Member] - Infrastructure Engineer
-
-## 📞 Contact
-
-For questions, support, or collaboration opportunities:
-
-- **Email**: team@smarttraffic.dev
-- **Demo Video**: [YouTube Link]
-- **Live Demo**: [Deployment URL]
-- **Documentation**: [Wiki Link]
 
 ---
 
